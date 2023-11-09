@@ -7,6 +7,12 @@
 	* NOTE: You are responsible for fixing any bugs this code may have!
 	*
 	*/
+       #include <fcntl.h>
+       #include <sys/stat.h>
+       #include <iostream>
+       #include <cerrno> // Add this line to handle errno
+#include "command.h"
+
 
 	#include <stdio.h>
 	#include <stdlib.h>
@@ -17,6 +23,7 @@
 	#include <signal.h>
 
 	#include "command.h"
+	static int backgroundCommandsCount = 0;
 
 	SimpleCommand::SimpleCommand() {
 		// Creat available space for 5 arguments
@@ -125,26 +132,51 @@
 	}
 
 	void Command::execute() {
-		// Don't do anything if there are no simple commands
-		if (_numberOfSimpleCommands == 0) {
-			prompt();
-			return;
-		}
+    // Don't do anything if there are no simple commands
+    if (_numberOfSimpleCommands == 0) {
+        prompt();
+        return;
+    }
 
-		// Print contents of Command data structure
-		print();
+    // Print contents of the Command data structure
+    print();
+    if (_background) {
+        backgroundCommandsCount++;
+    }
 
-		// Add execution here
-		// For every simple command fork a new process
-		// Setup i/o redirection
-		// and call exec
+    // Add execution here
+    pid_t pid;  // Declare pid here
+    for (int i = 0; i < _numberOfSimpleCommands; ++i) {
+        pid = fork(); // Create a child process
+        if (pid < 0) {
+            std::cerr << "Failed to fork." << std::endl;
+            exit(1);
+        }
 
-		// Clear to prepare for next command
-		clear();
+        if (pid == 0) { // Child process
+            // Handle input/output redirection if needed
+            // ...
 
-		// Print new prompt
-		prompt();
-	}
+            // Execute the simple command using execvp
+            char **args = _simpleCommands[i]->_arguments;
+            execvp(args[0], args);
+
+            // If execvp fails, print an error message
+            perror("Failed to execute command");
+            exit(1);
+        }
+    }
+
+    if (!_background) {
+        int status;
+        pid_t lastChild;
+        while ((lastChild = waitpid(pid, &status, 0)) > 0) {
+            // Handle the termination of child processes
+        }
+    }}
+    
+
+
 
 	// Shell implementation
 

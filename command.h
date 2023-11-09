@@ -1,6 +1,8 @@
 #ifndef command_h
 #define command_h
-
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <iostream>
 // Command Data Structure
 struct SimpleCommand {
     // Available space for arguments currently preallocated
