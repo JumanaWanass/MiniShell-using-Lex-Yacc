@@ -7,6 +7,7 @@
 	* NOTE: You are responsible for fixing any bugs this code may have!
 	*
 	*/
+       #include <unistd.h>
        #include <fcntl.h>
        #include <sys/stat.h>
        #include <iostream>
@@ -130,8 +131,9 @@
 		printf("\n\n");
 
 	}
+	
 
-	void Command::execute() {
+void Command::execute() {
     // Don't do anything if there are no simple commands
     if (_numberOfSimpleCommands == 0) {
         prompt();
@@ -144,18 +146,41 @@
         backgroundCommandsCount++;
     }
 
-    // Add execution here
-    pid_t pid;  // Declare pid here
+    int prevPipe[2]; // File descriptors for the previous pipe
+    int currPipe[2]; // File descriptors for the current pipe
+    int prevRead = -1; // File descriptor for the previous read end of the pipe
+ 
     for (int i = 0; i < _numberOfSimpleCommands; ++i) {
-        pid = fork(); // Create a child process
+        // Create a new pipe
+        if (pipe(currPipe) < 0) {
+            std::cerr << "Failed to create pipe." << std::endl;
+            exit(1);
+        }
+
+        pid_t pid = fork(); // Create a child process
         if (pid < 0) {
             std::cerr << "Failed to fork." << std::endl;
             exit(1);
         }
 
         if (pid == 0) { // Child process
-            // Handle input/output redirection if needed
-            // ...
+            // Set up input redirection from the previous command's pipe
+            if (prevRead != -1) {
+                if (dup2(prevRead, STDIN_FILENO) < 0) {
+                    std::cerr << "Failed to redirect input." << std::endl;
+                    exit(1);
+                }
+                close(prevRead);
+            }
+
+            // Set up output redirection to the current command's pipe
+            if (i < _numberOfSimpleCommands - 1) {
+                if (dup2(currPipe[1], STDOUT_FILENO) < 0) {
+                    std::cerr << "Failed to redirect output." << std::endl;
+                    exit(1);
+                }
+                close(currPipe[1]);
+            }
 
             // Execute the simple command using execvp
             char **args = _simpleCommands[i]->_arguments;
@@ -164,16 +189,38 @@
             // If execvp fails, print an error message
             perror("Failed to execute command");
             exit(1);
+        } else { // Parent process
+            // Close unnecessary file descriptors
+            if (prevRead != -1) {
+                close(prevRead);
+            }
+            close(currPipe[1]);
+
+            // Store the current pipe's read end for the next iteration
+            prevRead = currPipe[0];
+
+            // Wait for the child process to finish
+            int status;
+            waitpid(pid, &status, 0);
         }
     }
-
+    pid_t pid = fork();
+ 
     if (!_background) {
         int status;
         pid_t lastChild;
-        while ((lastChild = waitpid(pid, &status, 0)) > 0) {
+        while ((lastChild = waitpid(pid, &status, 0)) > 0)  {
             // Handle the termination of child processes
         }
-    }}
+    }
+
+
+    // Clear for the next command
+    clear();
+
+    // Print new prompt
+    prompt();
+}
     
 
 
@@ -197,4 +244,3 @@
 		yyparse();
 		return 0;
 	}
-
