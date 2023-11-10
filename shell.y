@@ -12,7 +12,7 @@ extern "C" {
 %}
 
 %token <string_val> WORD
-%token NOTOKEN GREAT NEWLINE AMPERSAND PIPE APPEND SMALL AMPERSANDAPPEND LESS
+%token NOTOKEN GREAT NEWLINE AMPERSAND PIPE APPEND SMALL AMPERSANDAPPEND LESS CD
 
 %union {
     char *string_val;
@@ -55,14 +55,19 @@ complex_command:
     }
     ;
 
-simple_command:    
+simple_command:
     command_and_args iomodifier_opt NEWLINE {
         printf("   Yacc: Execute command\n");
+        Command::_currentCommand.execute();
+    }
+    | CD iomodifier_opt NEWLINE {
+        printf("   Yacc: Execute cd command\n");
         Command::_currentCommand.execute();
     }
     | NEWLINE 
     | error NEWLINE { yyerrok; }
     ;
+
 
 piped_list: 
     piped_list piped_command
