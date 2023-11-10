@@ -1,5 +1,7 @@
 
 # Current errors:
+To download the repo on your local machine directly, run the following command:
+`git clone https://github.com/JumanaWanass/MiniShell-using-Lex-Yacc.git`
 ## Part 3:
 When running the command: `cd`
 It doesn't work. I tried treating it as a token rather than a built in function, and modified the lex and yacc file accordingly.. however it didn't work.
