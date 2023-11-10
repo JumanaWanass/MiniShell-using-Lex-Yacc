@@ -4,7 +4,8 @@
 #include <sys/wait.h>
 #include <iostream>
 // Command Data Structure
-struct SimpleCommand {
+struct SimpleCommand
+{
     // Available space for arguments currently preallocated
     int _numberOfAvailableArguments;
 
@@ -16,23 +17,27 @@ struct SimpleCommand {
     void insertArgument(char *argument);
 };
 
-struct Command {
+struct Command
+{
     int _numberOfAvailableSimpleCommands;
     int _numberOfSimpleCommands;
     SimpleCommand **_simpleCommands;
     char *_outFile;
     char *_inputFile;
     char *_errFile;
-	char *_appendFile;
+    char *_appendFile;
     int _append;
     int _background;
 
     void prompt();
     void print();
+    Command();
+
     void execute();
     void clear();
-
-    Command();
+    bool changeDirectory(char *directory);
+    bool isExitCommand();
+    static bool shouldExit;  // Add this line    Command();
     void insertSimpleCommand(SimpleCommand *simpleCommand);
 
     static Command _currentCommand;
