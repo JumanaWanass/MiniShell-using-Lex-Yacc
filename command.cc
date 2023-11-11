@@ -16,48 +16,51 @@ static int backgroundCommandsCount = 0;
 
 SimpleCommand::SimpleCommand()
 {
-	// Creat available space for 5 arguments
-	_numberOfAvailableArguments = 5;
-	_numberOfArguments = 0;
-	_arguments = (char **)malloc(_numberOfAvailableArguments * sizeof(char *));
+    // Creat available space for 5 arguments
+    _numberOfAvailableArguments = 5;
+    _numberOfArguments = 0;
+    _arguments = (char **)malloc(_numberOfAvailableArguments * sizeof(char *));
 }
 
 void SimpleCommand::insertArgument(char *argument)
 {
-	if (_numberOfAvailableArguments == _numberOfArguments + 1)
-	{
-		// Double the available space
-		_numberOfAvailableArguments *= 2;
-		_arguments = (char **)realloc(_arguments,
-									  _numberOfAvailableArguments * sizeof(char *));
-	}
+    if (_numberOfAvailableArguments == _numberOfArguments + 1)
+    {
+        // Double the available space
+        _numberOfAvailableArguments *= 2;
+        _arguments = (char **)realloc(_arguments,
+                                      _numberOfAvailableArguments * sizeof(char *));
+    }
 
-	_arguments[_numberOfArguments] = argument;
+    _arguments[_numberOfArguments] = argument;
 
-	// Add NULL argument at the end
-	_arguments[_numberOfArguments + 1] = NULL;
+    // Add NULL argument at the end
+    _arguments[_numberOfArguments + 1] = NULL;
 
-	_numberOfArguments++;
+    _numberOfArguments++;
 }
 
 Command::Command()
 {
-	// Create available space for one simple command
-	_numberOfAvailableSimpleCommands = 1;
-	_simpleCommands = (SimpleCommand **)malloc(_numberOfSimpleCommands * sizeof(SimpleCommand *));
+    // Create available space for one simple command
+    _numberOfAvailableSimpleCommands = 1;
+    _simpleCommands = (SimpleCommand **)malloc(_numberOfSimpleCommands * sizeof(SimpleCommand *));
 
-	_numberOfSimpleCommands = 0;
-	_outFile = 0;
-	_inputFile = 0;
-	_errFile = 0;
-	_appendFile = 0;
-	_append = 0; // Initialize _append to 0
-	_background = 0;
+    _numberOfSimpleCommands = 0;
+    _outFile = 0;
+    _inputFile = 0;
+    _errFile = 0;
+    _appendFile = 0;
+    _append = 0; // Initialize _append to 0
+    _background = 0;
+    _logFile = 0;
 }
 
-bool Command::isExitCommand() {
+bool Command::isExitCommand()
+{
     if (_numberOfSimpleCommands == 1 && _simpleCommands[0]->_numberOfArguments == 1 &&
-        strcmp(_simpleCommands[0]->_arguments[0], "exit") == 0) {
+        strcmp(_simpleCommands[0]->_arguments[0], "exit") == 0)
+    {
         _currentCommand.shouldExit = true;
         return true;
     }
@@ -69,56 +72,56 @@ bool Command::shouldExit = false;
 
 void Command::insertSimpleCommand(SimpleCommand *simpleCommand)
 {
-	if (_numberOfAvailableSimpleCommands == _numberOfSimpleCommands)
-	{
-		_numberOfAvailableSimpleCommands *= 2;
-		_simpleCommands = (SimpleCommand **)realloc(_simpleCommands,
-													_numberOfAvailableSimpleCommands * sizeof(SimpleCommand *));
-	}
+    if (_numberOfAvailableSimpleCommands == _numberOfSimpleCommands)
+    {
+        _numberOfAvailableSimpleCommands *= 2;
+        _simpleCommands = (SimpleCommand **)realloc(_simpleCommands,
+                                                    _numberOfAvailableSimpleCommands * sizeof(SimpleCommand *));
+    }
 
-	_simpleCommands[_numberOfSimpleCommands] = simpleCommand;
-	_numberOfSimpleCommands++;
+    _simpleCommands[_numberOfSimpleCommands] = simpleCommand;
+    _numberOfSimpleCommands++;
 }
 
 void Command::clear()
 {
-	for (int i = 0; i < _numberOfSimpleCommands; i++)
-	{
-		for (int j = 0; j < _simpleCommands[i]->_numberOfArguments; j++)
-		{
-			free(_simpleCommands[i]->_arguments[j]);
-		}
+    for (int i = 0; i < _numberOfSimpleCommands; i++)
+    {
+        for (int j = 0; j < _simpleCommands[i]->_numberOfArguments; j++)
+        {
+            free(_simpleCommands[i]->_arguments[j]);
+        }
 
-		free(_simpleCommands[i]->_arguments);
-		free(_simpleCommands[i]);
-	}
+        free(_simpleCommands[i]->_arguments);
+        free(_simpleCommands[i]);
+    }
 
-	if (_outFile)
-	{
-		free(_outFile);
-	}
+    if (_outFile)
+    {
+        free(_outFile);
+    }
 
-	if (_inputFile)
-	{
-		free(_inputFile);
-	}
+    if (_inputFile)
+    {
+        free(_inputFile);
+    }
 
-	if (_errFile)
-	{
-		free(_errFile);
-	}
+    if (_errFile)
+    {
+        free(_errFile);
+    }
 
-	if (_appendFile)
-	{
-		free(_appendFile);
-	}
-	_numberOfSimpleCommands = 0;
-	_outFile = 0;
-	_inputFile = 0;
-	_errFile = 0;
-	_appendFile = 0;
-	_append = 0; // Reset _append
-	_background = 0;
+    if (_appendFile)
+    {
+        free(_appendFile);
+    }
+    _numberOfSimpleCommands = 0;
+    _outFile = 0;
+    _inputFile = 0;
+    _errFile = 0;
+    _appendFile = 0;
+    _append = 0; // Reset _append
+    _background = 0;
 }
 
 void handleCtrlC(int signo)
@@ -136,6 +139,27 @@ void handleCtrlC(int signo)
     }
 }
 
+void handleSIGCHLD(int signo)
+{
+    int status;
+    pid_t childPid;
+
+    // Reap all terminated child processes
+    while ((childPid = waitpid(-1, &status, WNOHANG)) > 0)
+    {
+        // Log the termination of the child process to shell.log
+        FILE *logFile = fopen("shell.log", "a");
+        if (logFile != nullptr)
+        {
+            fprintf(logFile, "Child process %d terminated with status %d\n", childPid, status);
+            fclose(logFile);
+        }
+        else
+        {
+            perror("Failed to open shell.log for writing");
+        }
+    }
+}
 
 void setupSignalHandler()
 {
@@ -143,45 +167,61 @@ void setupSignalHandler()
     sa.sa_handler = handleCtrlC;
     sa.sa_flags = SA_RESTART;
     sigaction(SIGINT, &sa, NULL);
-}
 
+    // Setup SIGCHLD handler
+    sa.sa_handler = handleSIGCHLD;
+    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    sigaction(SIGCHLD, &sa, NULL);
+}
 
 void Command::print()
 {
-	printf("\n\n");
-	printf("              COMMAND TABLE                \n");
-	printf("\n");
-	printf("  #   Simple Commands\n");
-	printf("  --- ----------------------------------------------------------\n");
+    printf("\n\n");
+    printf("              COMMAND TABLE                \n");
+    printf("\n");
+    printf("  #   Simple Commands\n");
+    printf("  --- ----------------------------------------------------------\n");
 
-	for (int i = 0; i < _numberOfSimpleCommands; i++)
-	{
-		printf("  %-3d ", i);
-		for (int j = 0; j < _simpleCommands[i]->_numberOfArguments; j++)
-		{
-			printf("\"%s\" \t", _simpleCommands[i]->_arguments[j]);
-		}
-	}
+    for (int i = 0; i < _numberOfSimpleCommands; i++)
+    {
+        printf("  %-3d ", i);
+        for (int j = 0; j < _simpleCommands[i]->_numberOfArguments; j++)
+        {
+            printf("\"%s\" \t", _simpleCommands[i]->_arguments[j]);
+        }
+    }
 
-	printf("\n\n");
-	printf("  Output       Input        Error        Background\n");
-	printf("  ------------ ------------ ------------ ------------\n");
-	printf("  %-12s %-12s %-12s %-12s\n", _outFile ? _outFile : "default",
-		   _inputFile ? _inputFile : "default", _errFile ? _errFile : "default",
-		   _background ? "YES" : "NO");
-	printf("\n\n");
+    printf("\n\n");
+    printf("  Output       Input        Error        Background\n");
+    printf("  ------------ ------------ ------------ ------------\n");
+    printf("  %-12s %-12s %-12s %-12s\n", _outFile ? _outFile : "default",
+           _inputFile ? _inputFile : "default", _errFile ? _errFile : "default",
+           _background ? "YES" : "NO");
+    printf("\n\n");
 }
 
-bool Command::changeDirectory( char *directory) {
+bool Command::changeDirectory(char *directory)
+{
     // If no directory is specified, change to the home directory
-    if (directory == nullptr || strlen(directory) == 0) {
+    if (directory == nullptr || strlen(directory) == 0)
+    {
         const char *homeDir = getenv("HOME");
-        if (homeDir != nullptr) {
+        if (homeDir != nullptr)
+        {
             return chdir(homeDir) == 0;
         }
-    } else {
-        return chdir(directory) == 0;
     }
+    else
+    {
+        // Try changing the directory in the parent process
+        if (chdir(directory) == 0)
+        {
+            // If successful, update the prompt
+            prompt();
+            return true;
+        }
+    }
+
     return false; // Return false if the directory change fails
 }
 
@@ -304,7 +344,28 @@ void Command::execute()
         pid_t lastChild;
         while ((lastChild = waitpid(-1, &status, 0)) > 0)
         {
-            // Handle the termination of child processes
+            FILE *logFile = fopen("shell.log", "a");
+            if (logFile != nullptr)
+            {
+                if (WIFEXITED(status))
+                {
+                    fprintf(logFile, "Child process %d terminated normally with status %d\n", lastChild, WEXITSTATUS(status));
+                }
+                else if (WIFSIGNALED(status))
+                {
+                    fprintf(logFile, "Child process %d terminated by signal %d\n", lastChild, WTERMSIG(status));
+                }
+                else
+                {
+                    fprintf(logFile, "Child process %d terminated abnormally\n", lastChild);
+                }
+
+                fclose(logFile);
+            }
+            else
+            {
+                perror("Failed to open shell.log for writing");
+            }
         }
     }
 
@@ -314,9 +375,6 @@ void Command::execute()
     // Print new prompt
     prompt();
 }
-
-
-
 
 // Shell implementation
 
@@ -335,18 +393,15 @@ void Command::prompt()
     fflush(stdout);
 }
 
-
 Command Command::_currentCommand;
 SimpleCommand *Command::_currentSimpleCommand;
 
 int yyparse(void);
 
-int main() {
-    // Setup Ctrl+C signal handler
-    struct sigaction sa;
-    sa.sa_handler = handleCtrlC;
-    sa.sa_flags = SA_RESTART;
-    sigaction(SIGINT, &sa, NULL);
+int main()
+{
+    // Setup signal handlers
+    setupSignalHandler();
 
     // Start the shell
     Command::_currentCommand.prompt();
