@@ -68,6 +68,15 @@ simple_command:
     | error NEWLINE { yyerrok; }
     ;
 
+cd_command:
+    CD iomodifier_opt NEWLINE {
+        printf("   Yacc: Execute cd command\n");
+        Command::_currentCommand.execute();
+    }
+    ;
+
+
+
 
 piped_list: 
     piped_list piped_command
