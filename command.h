@@ -28,6 +28,8 @@ struct Command
     char *_appendFile;
     int _append;
     int _background;
+    int _logFile;
+    
 
     void prompt();
     void print();
@@ -39,6 +41,10 @@ struct Command
     bool isExitCommand();
     static bool shouldExit;  // Add this line    Command();
     void insertSimpleCommand(SimpleCommand *simpleCommand);
+    void add_dir_to_path(char *directory);
+    int changeCurrentDirectory();
+    void ChangeDir(char* dir);
+
 
     static Command _currentCommand;
     static SimpleCommand *_currentSimpleCommand;
