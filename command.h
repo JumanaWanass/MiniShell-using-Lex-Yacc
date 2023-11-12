@@ -28,7 +28,7 @@ struct Command
     char *_appendFile;
     int _append;
     int _background;
-    int _logFile;
+    char *_logFile;
     
 
     void prompt();
