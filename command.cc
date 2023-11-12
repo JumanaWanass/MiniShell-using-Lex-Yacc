@@ -272,6 +272,19 @@ void Command::execute()
         }
     }
 
+     if (_logFile)
+    {
+        if (!_append)
+            op = open(_logFile, O_WRONLY | O_CREAT, 0777);
+        else
+            op = open(_logFile, O_WRONLY | O_APPEND, 0777);
+        if (op == -1)
+        {
+            perror("Failed to open log file");
+            exit(1);
+        }
+    }
+
     int fd[2];        // 1D array for a single pipe
     int prev_fd = 0;  // Store the previous file descriptor for piping
     int pid;         // Store the PID of the child process
