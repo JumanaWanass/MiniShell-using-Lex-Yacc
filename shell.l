@@ -37,15 +37,12 @@
 "<"    {
     return LESS;
 }
-
-"cd"      { return CD; }
-
-
-[^ \t\n&<>|][^ \t\n&<|]*  {
-    /* Assume that file names have only alpha chars */
+[^ \t\n&<>|]+  {
+    /* Allow any character except for special characters */
     yylval.string_val = strdup(yytext);
     return WORD;
 }
+
 
 .    {
     /* Invalid character in input */
@@ -54,3 +51,6 @@
 
 
 %%
+int yywrap() {
+    return 1;
+}
