@@ -58,6 +58,7 @@ Command::Command()
 
 bool Command::isExitCommand()
 {
+    // if the input is the word 'exit'
     if (_numberOfSimpleCommands == 1 && _simpleCommands[0]->_numberOfArguments == 1 &&
         strcmp(_simpleCommands[0]->_arguments[0], "exit") == 0)
     {
@@ -144,7 +145,7 @@ void handleSIGCHLD(int signo)
     int status;
     pid_t childPid;
 
-    // Reap all terminated child processes
+    // Get all terminated child processes
     while ((childPid = waitpid(-1, &status, WNOHANG)) > 0)
     {
         // Log the termination of the child process to shell.log
@@ -244,6 +245,7 @@ void Command::execute()
         prompt();
         return;
     }
+
     // Check if it's the cd command
    if (_numberOfSimpleCommands == 1 && _simpleCommands[0]->_numberOfArguments <=2 &&
     (strcmp(_simpleCommands[0]->_arguments[0], "cd") == 0))
@@ -271,6 +273,7 @@ else
     int defaultOut = dup(1);
 
     int ip = -1, op = -1, err = -1;
+    //The following conditions are for checking that files exist
     if (_errFile)
     {
         err = open(_errFile, O_WRONLY | O_CREAT, 0777);
@@ -297,7 +300,6 @@ else
             exit(1);
         }
     }
-
      if (_logFile)
     {
         if (!_append)
@@ -401,7 +403,8 @@ else
         int status;
         pid_t lastChild;
         while ((lastChild = waitpid(-1, &status, 0)) > 0)
-        {
+        {   
+            // Write in logfile the child process terminated
             FILE *logFile = fopen("shell.log", "a");
             if (logFile != nullptr)
             {
