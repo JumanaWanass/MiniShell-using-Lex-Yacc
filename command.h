@@ -34,10 +34,10 @@ struct Command
     void prompt();
     void print();
     Command();
-
+bool changeDirectory(const char *directory);
     void execute();
     void clear();
-    bool changeDirectory(char *directory);
+    
     bool isExitCommand();
     static bool shouldExit;  // Add this line    Command();
     void insertSimpleCommand(SimpleCommand *simpleCommand);

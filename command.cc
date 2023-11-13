@@ -200,31 +200,36 @@ void Command::print()
     printf("\n\n");
 }
 
-bool Command::changeDirectory(char *directory)
-{
+bool Command::changeDirectory(const char *directory) {
     // If no directory is specified, change to the home directory
-    if (directory == nullptr || strlen(directory) == 0)
-    {
+    if (directory == nullptr || strlen(directory) == 0) {
         const char *homeDir = getenv("HOME");
-        if (homeDir != nullptr)
-        {
-            return chdir(homeDir) == 0;
+        if (homeDir != nullptr) {
+            if (chdir(homeDir) == 0) {
+                // If successful, update the prompt
+                prompt();
+                return true;
+            }
         }
-    }
-    else
-    {
-        // Try changing the directory in the parent process
-        if (chdir(directory) == 0)
-        {
-            // If successful, update the prompt
+    } else {
+        // Try changing the directory
+        // Before chdir
+        std::cout << "Changing to directory: " << directory << std::endl;
+
+        if (chdir(directory) == 0) {
+            // If successful
+            std::cout << "Directory change successful!" << std::endl;
+            // Update the prompt
             prompt();
             return true;
+        } else {
+            // If the specified directory doesn't exist, print an error message
+            perror("cd");
         }
     }
 
     return false; // Return false if the directory change fails
 }
-
 void Command::execute()
 {
     if (isExitCommand())
@@ -239,6 +244,27 @@ void Command::execute()
         prompt();
         return;
     }
+    // Check if it's the cd command
+   if (_numberOfSimpleCommands == 1 && _simpleCommands[0]->_numberOfArguments <=2 &&
+    (strcmp(_simpleCommands[0]->_arguments[0], "cd") == 0))
+{
+    // If it's the cd command, change the directory
+    std::cout << "Executing cd command" << std::endl;
+const char *directory = (_simpleCommands[0]->_numberOfArguments == 2) ? _simpleCommands[0]->_arguments[1] : nullptr;
+if (changeDirectory(directory))
+{
+    // Print new prompt if the directory change is successful
+    prompt();
+    return;
+}
+else
+{
+    // Print an error message if the directory change fails
+    std::cerr << "Failed to change directory." << std::endl;
+    prompt();
+    return;
+}
+}
 
     print();
     int defaultIn = dup(0);
@@ -289,26 +315,7 @@ void Command::execute()
     int prev_fd = 0;  // Store the previous file descriptor for piping
     int pid;         // Store the PID of the child process
 
-    // Check if it's the cd command
-    if (_numberOfSimpleCommands == 1 && _simpleCommands[0]->_numberOfArguments == 1 &&
-        strcmp(_simpleCommands[0]->_arguments[0], "cd") == 0)
-    {
-        // If it's the cd command, change the directory
-        char *directory = (_simpleCommands[0]->_numberOfArguments == 2) ? _simpleCommands[0]->_arguments[1] : nullptr;
-        if (changeDirectory(directory))
-        {
-            // Print new prompt if the directory change is successful
-            prompt();
-            return;
-        }
-        else
-        {
-            // Print an error message if the directory change fails
-            std::cerr << "Failed to change directory." << std::endl;
-            prompt();
-            return;
-        }
-    }
+    
 
     // Print contents of the Command data structure
     print();
